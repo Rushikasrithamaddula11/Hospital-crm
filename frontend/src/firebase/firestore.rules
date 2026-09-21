@@ -1,0 +1,110 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check authentication
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper functions for roles
+    function hasRole(role) {
+      return isAuthenticated() && request.auth.token.role == role;
+    }
+
+    function isAdmin() {
+      return hasRole('Admin');
+    }
+
+    function isDoctor() {
+      return hasRole('Doctor');
+    }
+
+    function isNurse() {
+      return hasRole('Nurse');
+    }
+
+    function isPatient() {
+      return hasRole('Patient');
+    }
+
+    // Users Collection Rules
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    // Patients Collection Rules
+    match /patients/{patientId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAdmin() || isDoctor() || isNurse();
+      allow delete: if isAdmin();
+    }
+
+    // Appointments Collection Rules
+    match /appointments/{appointmentId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    // Consultations Collection Rules
+    match /consultations/{consultationId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAdmin() || isDoctor();
+      allow delete: if isAdmin();
+    }
+
+    // Prescriptions Collection Rules
+    match /prescriptions/{prescriptionId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAdmin() || isDoctor();
+      allow delete: if isAdmin();
+    }
+
+    // Lab Reports Collection Rules
+    match /labReports/{reportId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAdmin() || isDoctor();
+      allow delete: if isAdmin();
+    }
+
+    // Vitals Collection Rules
+    match /vitals/{vitalId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAdmin() || isDoctor() || isNurse();
+      allow delete: if isAdmin();
+    }
+
+    // Notifications Collection Rules
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    // Audit Logs Collection Rules
+    match /auditLogs/{logId} {
+      allow read: if isAdmin() || isDoctor();
+      allow create: if isAuthenticated();
+      allow update, delete: if false; // Immutable audit log
+    }
+
+    // Directory Collections
+    match /doctors/{doctorId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /nurses/{nurseId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /departments/{departmentId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}
